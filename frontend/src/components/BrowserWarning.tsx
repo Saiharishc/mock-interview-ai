@@ -1,5 +1,5 @@
 export function BrowserWarning() {
-  const w = typeof window !== "undefined" ? (window as Record<string, unknown>) : null;
+  const w = typeof window !== "undefined" ? (window as unknown as Record<string, unknown>) : null;
   const hasSpeech = !!(w?.["SpeechRecognition"] ?? w?.["webkitSpeechRecognition"]);
 
   if (hasSpeech) return null;
