@@ -3,7 +3,7 @@ services:
     name: mock-interview-backend
     runtime: python
     rootDir: backend
-    buildCommand: pip install -e .
+    buildCommand: pip install -r requirements.txt
     startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
     envVars:
       - key: MASTER_KEY
@@ -14,8 +14,6 @@ services:
         sync: false
       - key: CORS_ORIGINS
         sync: false
-      - key: DATABASE_URL
-        value: sqlite:///./mock_interview.db
       - key: ENVIRONMENT
         value: production
 
@@ -29,6 +27,8 @@ services:
       - key: VITE_API_BASE_URL
         sync: false
       - key: VITE_GOOGLE_CLIENT_ID
+        sync: false
+      - key: VITE_WS_BASE_URL
         sync: false
     routes:
       - type: rewrite
