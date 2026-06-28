@@ -1,7 +1,6 @@
 export function BrowserWarning() {
-  const hasSpeech =
-    typeof window !== "undefined" &&
-    !!(window.SpeechRecognition ?? (window as Window & { webkitSpeechRecognition?: unknown }).webkitSpeechRecognition);
+  const w = typeof window !== "undefined" ? (window as Record<string, unknown>) : null;
+  const hasSpeech = !!(w?.["SpeechRecognition"] ?? w?.["webkitSpeechRecognition"]);
 
   if (hasSpeech) return null;
   return (
