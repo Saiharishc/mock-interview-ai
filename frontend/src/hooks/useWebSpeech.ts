@@ -1,12 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 
-// Augment window types for non-standard SpeechRecognition
-declare global {
-  interface Window {
-    SpeechRecognition?: typeof SpeechRecognition;
-    webkitSpeechRecognition?: typeof SpeechRecognition;
-  }
-}
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type AnySpeechRec = any;
 
 interface UseWebSpeech {
   isSupported: boolean;
@@ -21,19 +16,19 @@ interface UseWebSpeech {
 }
 
 export function useWebSpeech(): UseWebSpeech {
-  const SpeechRec =
+  const SpeechRec: AnySpeechRec =
     typeof window !== "undefined"
-      ? window.SpeechRecognition ?? window.webkitSpeechRecognition
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      ? (window as any).SpeechRecognition ?? (window as any).webkitSpeechRecognition
       : undefined;
   const isSupported = !!SpeechRec;
 
-  const recRef = useRef<SpeechRecognition | null>(null);
+  const recRef = useRef<AnySpeechRec>(null);
   const [isListening, setIsListening] = useState(false);
   const [interimTranscript, setInterimTranscript] = useState("");
   const [finalTranscript, setFinalTranscript] = useState("");
   const [voices, setVoices] = useState<SpeechSynthesisVoice[]>([]);
 
-  // Load voices (async on Chrome)
   useEffect(() => {
     function loadVoices() {
       setVoices(window.speechSynthesis.getVoices());
@@ -50,13 +45,12 @@ export function useWebSpeech(): UseWebSpeech {
     rec.interimResults = true;
     rec.lang = "en-US";
 
-    rec.onresult = (e: Event) => {
-      const ev = e as SpeechRecognitionEvent;
+    rec.onresult = (e: AnySpeechRec) => {
       let interim = "";
       let final = "";
-      for (let i = ev.resultIndex; i < ev.results.length; i++) {
-        const t = ev.results[i][0].transcript;
-        if (ev.results[i].isFinal) final += t;
+      for (let i = e.resultIndex; i < e.results.length; i++) {
+        const t = e.results[i][0].transcript;
+        if (e.results[i].isFinal) final += t;
         else interim += t;
       }
       if (interim) setInterimTranscript(interim);
