@@ -10,6 +10,7 @@ export type WSMsg =
   | { type: "paused" }
   | { type: "resumed" }
   | { type: "cancelled" }
+  | { type: "awaiting_next" }
   | { type: "ping" }
   | { type: "error"; message: string };
 

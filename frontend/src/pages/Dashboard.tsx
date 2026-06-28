@@ -6,7 +6,6 @@ import {
 } from "recharts";
 import { apiClient } from "@/api/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/cn";
 
 interface SessionSummary {
@@ -56,7 +55,7 @@ export function DashboardPage() {
     <div className="mx-auto max-w-5xl px-6 py-10 space-y-8">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold">Dashboard</h1>
-        <Button asChild><Link to="/configure">New interview</Link></Button>
+        <Link to="/configure" className="inline-flex items-center justify-center gap-2 rounded-md font-medium transition bg-primary text-primary-foreground hover:opacity-90 h-10 px-4 text-sm">New interview</Link>
       </div>
 
       {/* Stats row */}
@@ -139,14 +138,10 @@ export function DashboardPage() {
                       </span>
                     )}
                     {s.status === "completed" && (
-                      <Button asChild size="sm" variant="outline">
-                        <Link to={`/report/${s.id}`}>View report</Link>
-                      </Button>
+                      <Link to={`/report/${s.id}`} className="inline-flex items-center justify-center gap-2 rounded-md font-medium transition border border-border bg-transparent hover:bg-accent h-8 px-3 text-sm">View report</Link>
                     )}
                     {s.status === "active" && (
-                      <Button asChild size="sm">
-                        <Link to={`/interview/${s.id}`}>Resume</Link>
-                      </Button>
+                      <Link to={`/interview/${s.id}`} className="inline-flex items-center justify-center gap-2 rounded-md font-medium transition bg-primary text-primary-foreground hover:opacity-90 h-8 px-3 text-sm">Resume</Link>
                     )}
                   </div>
                 </div>

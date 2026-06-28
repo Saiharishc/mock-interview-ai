@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { apiClient } from "@/api/client";
-import { useInterviewSocket, type Evaluation, type Report } from "@/hooks/useInterviewSocket";
+import { useInterviewSocket, type Evaluation } from "@/hooks/useInterviewSocket";
 import { useWebSpeech } from "@/hooks/useWebSpeech";
 import { QuestionPanel } from "@/components/interview/QuestionPanel";
 import { AnswerInput } from "@/components/interview/AnswerInput";
@@ -50,7 +50,7 @@ export function InterviewPage() {
   const [lastEval, setLastEval] = useState<Evaluation | null>(null);
   const [transcript, setTranscript] = useState<TranscriptEntry[]>([]);
   const [isPaused, setIsPaused] = useState(false);
-  const [report, setReport] = useState<Report | null>(null);
+  const [, setReport] = useState<Report | null>(null);
   const [statusMsg, setStatusMsg] = useState("");
   const [awaitingNext, setAwaitingNext] = useState(false);
   const [drawer, setDrawer] = useState<{ title: string; content: string } | null>(null);

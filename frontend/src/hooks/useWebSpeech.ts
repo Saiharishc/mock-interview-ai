@@ -50,12 +50,13 @@ export function useWebSpeech(): UseWebSpeech {
     rec.interimResults = true;
     rec.lang = "en-US";
 
-    rec.onresult = (e: SpeechRecognitionEvent) => {
+    rec.onresult = (e: Event) => {
+      const ev = e as SpeechRecognitionEvent;
       let interim = "";
       let final = "";
-      for (let i = e.resultIndex; i < e.results.length; i++) {
-        const t = e.results[i][0].transcript;
-        if (e.results[i].isFinal) final += t;
+      for (let i = ev.resultIndex; i < ev.results.length; i++) {
+        const t = ev.results[i][0].transcript;
+        if (ev.results[i].isFinal) final += t;
         else interim += t;
       }
       if (interim) setInterimTranscript(interim);
