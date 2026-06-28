@@ -45,8 +45,10 @@ export function useInterviewSocket(): UseSock {
 
   const connect = useCallback((sessionId: number) => {
     const token = useAuthStore.getState().token;
-    const wsBase = import.meta.env.VITE_WS_BASE_URL ?? "/ws";
-    const url = `${location.protocol === "https:" ? "wss" : "ws"}://${location.host}${wsBase}/interview/${sessionId}?token=${token}`;
+    const wsBase = import.meta.env.VITE_WS_BASE_URL;
+    const url = wsBase
+      ? `${wsBase}/ws/interview/${sessionId}?token=${token}`
+      : `${location.protocol === "https:" ? "wss" : "ws"}://${location.host}/ws/interview/${sessionId}?token=${token}`;
     setStatus("connecting");
     const ws = new WebSocket(url);
     wsRef.current = ws;
