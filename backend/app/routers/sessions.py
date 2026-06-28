@@ -69,18 +69,18 @@ def create_session(
     user: User = Depends(get_current_user),
     db: Session = Depends(get_session),
 ):
-    # Block concurrent active sessions per user
-    existing = db.exec(
+    # Cancel any stuck active/configured sessions before creating a new one
+    stuck = db.exec(
         select(InterviewSession).where(
             InterviewSession.user_id == user.id,
             InterviewSession.status.in_(["active", "configured"]),
         )
-    ).first()
-    if existing:
-        raise HTTPException(
-            status_code=409,
-            detail=f"Session {existing.id} is already {existing.status}. Complete or cancel it first.",
-        )
+    ).all()
+    for s in stuck:
+        s.status = "cancelled"
+        db.add(s)
+    if stuck:
+        db.commit()
 
     row = InterviewSession(user_id=user.id, **payload.model_dump())
     db.add(row)
