@@ -91,44 +91,52 @@ def chat(
     return content
 
 
-def _strip_markdown(text: str) -> str:
-    """Strip markdown code fences and extract JSON object/array from response."""
+def _extract_json(text: str) -> str:
+    """Extract the first complete JSON object or array from text, ignoring surrounding content.
+
+    Handles thinking models (Gemini 2.5-flash etc.) that emit reasoning prose
+    before/after the JSON, as well as markdown code fences.
+    """
     text = text.strip()
-    # Remove code fences
+
+    # 1. If wrapped in code fences, unwrap first
     if "```" in text:
-        # Extract content between first ``` and last ```
-        parts = text.split("```")
-        # parts[1] is the content inside fences (possibly prefixed with 'json')
-        if len(parts) >= 3:
-            text = parts[1]
-            # Remove language tag like 'json\n'
-            if "\n" in text:
-                text = text.split("\n", 1)[1]
-    text = text.strip()
-    # Find the first { or [ and last } or ] to extract just the JSON
-    start = min(
-        (text.find(c) for c in "{[" if text.find(c) != -1),
-        default=-1,
-    )
-    if start > 0:
-        text = text[start:]
-    return text.strip()
+        import re
+        m = re.search(r"```(?:json)?\s*([\s\S]*?)```", text)
+        if m:
+            text = m.group(1).strip()
+
+    # 2. Find outermost { ... } or [ ... ] by tracking brace depth
+    for open_char, close_char in (("{", "}"), ("[", "]")):
+        start = text.find(open_char)
+        if start == -1:
+            continue
+        depth = 0
+        for i, ch in enumerate(text[start:], start):
+            if ch == open_char:
+                depth += 1
+            elif ch == close_char:
+                depth -= 1
+                if depth == 0:
+                    return text[start:i + 1]
+
+    # 3. Fallback: return as-is and let json.loads raise a clear error
+    return text
 
 
 def chat_json(call: ProviderCall, messages: list[dict[str, str]], **kwargs: Any) -> dict[str, Any]:
     """Chat with JSON response. Retries once on parse failure."""
     raw = chat(call, messages, json_mode=True, **kwargs)
-    stripped = _strip_markdown(raw)
     try:
-        return json.loads(stripped)
+        return json.loads(_extract_json(raw))
     except json.JSONDecodeError:
-        logger.warning("JSON parse failed (raw=%r), retrying once", raw[:200])
+        logger.warning("JSON parse failed (raw=%r), retrying once", raw[:300])
         retry_messages = messages + [
             {"role": "assistant", "content": raw},
             {"role": "user", "content": "Your previous response was not valid JSON. Reply with only a valid JSON object, no markdown, no explanation."},
         ]
         raw = chat(call, retry_messages, json_mode=True, **kwargs)
-        return json.loads(_strip_markdown(raw))
+        return json.loads(_extract_json(raw))
 
 
 def ping(call: ProviderCall) -> dict[str, Any]:
