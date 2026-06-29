@@ -141,11 +141,15 @@ async def interview_ws(websocket: WebSocket, session_id: int):
                             await _send(websocket, {"type": "error", "message": "Empty answer"})
                             continue
 
-                        try:
-                            eval_result = evaluate_answer(db, call, session, q, transcript)
-                        except Exception as exc:  # noqa: BLE001
-                            await _send(websocket, {"type": "error", "message": f"Evaluation error: {exc}"})
-                            eval_result = None
+                        eval_result = None
+                        for attempt in range(2):
+                            try:
+                                eval_result = evaluate_answer(db, call, session, q, transcript)
+                                break
+                            except Exception as exc:  # noqa: BLE001
+                                logger.exception("Evaluation attempt %s failed: %s", attempt + 1, exc)
+                                if attempt == 1:
+                                    await _send(websocket, {"type": "error", "message": f"Evaluation error: {exc}"})
 
                         last_score = eval_result.score_10 if eval_result else None
                         last_topic = q.topic
