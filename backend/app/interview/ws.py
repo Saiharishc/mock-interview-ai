@@ -89,12 +89,17 @@ async def interview_ws(websocket: WebSocket, session_id: int):
                     await _send(websocket, {"type": "complete", "report": report.model_dump()})
                     break
 
-                try:
-                    q = generate_next_question(db, call, session, last_score, last_topic, follow_up_recommended)
-                except Exception as exc:  # noqa: BLE001
-                    await _send(websocket, {"type": "error", "message": f"LLM error: {exc}"})
-                    await asyncio.sleep(2)
-                    continue
+                q = None
+                for attempt in range(3):
+                    try:
+                        q = generate_next_question(db, call, session, last_score, last_topic, follow_up_recommended)
+                        break
+                    except Exception as exc:  # noqa: BLE001
+                        logger.warning("Question generation attempt %s failed: %s", attempt + 1, exc)
+                        await asyncio.sleep(2)
+                if q is None:
+                    await _send(websocket, {"type": "error", "message": "Failed to generate question after 3 attempts. Please end and restart the interview."})
+                    break
 
                 token_count += len(q.text.split()) * 2  # rough estimate
                 if token_count > settings.per_session_input_token_cap:
