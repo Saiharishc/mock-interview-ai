@@ -92,24 +92,40 @@ def chat(
 
 
 def _strip_markdown(text: str) -> str:
-    """Strip markdown code fences that some models wrap around JSON."""
+    """Strip markdown code fences and extract JSON object/array from response."""
     text = text.strip()
-    if text.startswith("```"):
-        text = text.split("\n", 1)[-1]  # remove opening ```json line
-        text = text.rsplit("```", 1)[0]  # remove closing ```
+    # Remove code fences
+    if "```" in text:
+        # Extract content between first ``` and last ```
+        parts = text.split("```")
+        # parts[1] is the content inside fences (possibly prefixed with 'json')
+        if len(parts) >= 3:
+            text = parts[1]
+            # Remove language tag like 'json\n'
+            if "\n" in text:
+                text = text.split("\n", 1)[1]
+    text = text.strip()
+    # Find the first { or [ and last } or ] to extract just the JSON
+    start = min(
+        (text.find(c) for c in "{[" if text.find(c) != -1),
+        default=-1,
+    )
+    if start > 0:
+        text = text[start:]
     return text.strip()
 
 
 def chat_json(call: ProviderCall, messages: list[dict[str, str]], **kwargs: Any) -> dict[str, Any]:
     """Chat with JSON response. Retries once on parse failure."""
     raw = chat(call, messages, json_mode=True, **kwargs)
+    stripped = _strip_markdown(raw)
     try:
-        return json.loads(_strip_markdown(raw))
+        return json.loads(stripped)
     except json.JSONDecodeError:
-        logger.warning("JSON parse failed, retrying once")
+        logger.warning("JSON parse failed (raw=%r), retrying once", raw[:200])
         retry_messages = messages + [
             {"role": "assistant", "content": raw},
-            {"role": "user", "content": "Your previous response was not valid JSON. Reply with only a valid JSON object, no markdown."},
+            {"role": "user", "content": "Your previous response was not valid JSON. Reply with only a valid JSON object, no markdown, no explanation."},
         ]
         raw = chat(call, retry_messages, json_mode=True, **kwargs)
         return json.loads(_strip_markdown(raw))
