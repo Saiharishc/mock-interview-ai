@@ -71,22 +71,37 @@ def chat(
         kwargs["response_format"] = {"type": "json_object"}
 
     response = litellm.completion(**kwargs, num_retries=3)
-    message = response["choices"][0]["message"]
-    content = message.get("content") if hasattr(message, "get") else message["content"]
+    logger.debug("Raw LLM response: %s", response)
+    choice = response["choices"][0]
+    message = choice["message"]
 
-    # Thinking models (e.g. gemini-2.5-flash) may return None content with
-    # reasoning in a separate field — extract it as fallback.
-    if content is None:
-        content = (
-            getattr(message, "reasoning_content", None)
-            or (message.get("reasoning_content") if hasattr(message, "get") else None)
-        )
+    # Extract content — try all known fields across providers
+    content = None
+    for getter in [
+        lambda m: m.get("content") if hasattr(m, "get") else m["content"],
+        lambda m: getattr(m, "content", None),
+        lambda m: m.get("reasoning_content") if hasattr(m, "get") else None,
+        lambda m: getattr(m, "reasoning_content", None),
+        # Gemini thinking: content may be nested in parts
+        lambda m: (
+            m.get("parts", [{}])[0].get("text")
+            if hasattr(m, "get") and m.get("parts")
+            else None
+        ),
+    ]:
+        try:
+            val = getter(message)
+            if val:
+                content = val
+                break
+        except Exception:  # noqa: BLE001
+            continue
 
     if not content:
-        logger.error("Empty LLM response. Full message: %s", message)
+        logger.error("Empty LLM response. Full choice: %s", choice)
         raise RuntimeError(
             f"LLM returned empty content for model '{kwargs.get('model')}'. "
-            "Try a non-thinking variant (e.g. gemini-2.5-flash-lite) or check your quota."
+            f"Full response: {str(choice)[:300]}"
         )
     return content
 
