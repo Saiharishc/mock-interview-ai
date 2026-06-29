@@ -71,7 +71,7 @@ def chat(
         kwargs["response_format"] = {"type": "json_object"}
 
     response = litellm.completion(**kwargs, num_retries=3)
-    logger.debug("Raw LLM response: %s", response)
+    logger.info("Raw LLM response: %s", str(response)[:2000])
     choice = response["choices"][0]
     message = choice["message"]
 
@@ -142,8 +142,10 @@ def _extract_json(text: str) -> str:
 def chat_json(call: ProviderCall, messages: list[dict[str, str]], **kwargs: Any) -> dict[str, Any]:
     """Chat with JSON response. Retries once on parse failure."""
     raw = chat(call, messages, json_mode=True, **kwargs)
+    extracted = _extract_json(raw)
+    logger.info("chat_json raw=%r extracted=%r", raw[:500], extracted[:500])
     try:
-        return json.loads(_extract_json(raw))
+        return json.loads(extracted)
     except json.JSONDecodeError:
         logger.warning("JSON parse failed (raw=%r), retrying once", raw[:300])
         retry_messages = messages + [
