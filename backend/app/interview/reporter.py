@@ -28,7 +28,7 @@ def build_report(db: Session, call: ProviderCall, session: InterviewSession) -> 
         {"role": "system", "content": reporter_system_prompt(session.role)},
         {"role": "user", "content": f"Interview transcript:\n\n{transcript_block}\n\nGenerate the report JSON."},
     ]
-    raw = chat_json(call, messages, max_tokens=1200, temperature=0.2)
+    raw = chat_json(call, messages, max_tokens=4096, temperature=0.2)
     report = ReportOutput.model_validate(raw)
 
     # Persist into session

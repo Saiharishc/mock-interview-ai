@@ -21,7 +21,7 @@ def evaluate_answer(
         {"role": "system", "content": evaluator_system_prompt(session.role, session.difficulty)},
         {"role": "user", "content": evaluator_user_prompt(question.text, transcript)},
     ]
-    raw = chat_json(call, messages, max_tokens=900, temperature=0.2)
+    raw = chat_json(call, messages, max_tokens=4096, temperature=0.2)
     result = EvaluationOutput.model_validate(raw)
 
     row = db.exec(select(Answer).where(Answer.question_id == question.id)).first()

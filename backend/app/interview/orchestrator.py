@@ -40,7 +40,7 @@ def generate_next_question(
     user = next_question_user_prompt(asked_texts, last_score, last_topic, follow_up_recommended)
 
     raw = chat_json(call, [{"role": "system", "content": system}, {"role": "user", "content": user}],
-                    max_tokens=300, temperature=0.8)
+                    max_tokens=2048, temperature=0.8)
     out = QuestionOutput.model_validate(raw)
 
     # Deduplicate: if text is too similar to an already-asked question, retry once
@@ -50,7 +50,7 @@ def generate_next_question(
             {"role": "user", "content": user},
             {"role": "assistant", "content": str(raw)},
             {"role": "user", "content": "That question was already asked. Ask a completely different one."},
-        ], max_tokens=300, temperature=0.9)
+        ], max_tokens=2048, temperature=0.9)
         out = QuestionOutput.model_validate(raw)
 
     q = Question(
